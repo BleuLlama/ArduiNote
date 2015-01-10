@@ -3,12 +3,17 @@
  * 	2015-01-06 yorgle@gmail.com
  *
  *	a simple slideshow presenter using TVOut
+ *
+ * 2015-01-09  1.1  Serial interface added with screendump and terminal display of text
+ *
+ * 2015-01-06  1.0  Initial release
+ *
  */
 
 #include <TVout.h>
 #include <avr/pgmspace.h>
 
-#define VERSA	" uNote v1.0 2015/1/6"
+#define VERSA	" uNote v1.1 2015/1/9"
 #define VERSB	"  yorgle@gmail.com"
 
 #define kPageDown	A0
@@ -16,6 +21,8 @@
 
 TVout TV;
 unsigned char x, y;
+
+char buffer[26];
 
 void setup()  {
   x = 0;
@@ -26,6 +33,12 @@ void setup()  {
   // buttons for forward/reverse
   pinMode( kPageDown, INPUT );
   pinMode( kPageUp, INPUT );
+  
+  Serial.begin( 115200 );
+  loadString( 42 );
+  Serial.println( buffer );
+  loadString( 43 );
+  Serial.println( buffer );
 }
 
 // the page to display
@@ -35,37 +48,46 @@ int page = 0;
 int pressedPageDown = 0;
 int pressedPageUp = 0;
 
+
 // current state, last state, release count
 int a, la, b, lb, r;
+
+// pagemove
+void previousPage( void )
+{
+  page--;
+  r++;
+}
+
+void nextPage( void )
+{
+  page++;
+  r++;
+}
+
 
 // handle reading the buttons
 void handleButtons() {
   a = digitalRead( kPageDown );
   if ( a != la && a == HIGH ) {
     pressedPageDown++;
-    page--;
-    r++;
+    previousPage();
   }
   la = a;
 
   b = digitalRead( kPageUp );
   if ( b != lb && b == HIGH) {
     pressedPageUp++;
-    page++;
-    r++;
+    nextPage();
   }
   lb = b;
 }
 
-// Slide content
-// it'll jsut be an array of strings,
-//  empty string for new page
-//  "E" for end of list
-
-// first string will get drawn at 0,0
-// then each new item gets drawn at 3,N+3
+// Slide content (internal hardcoded, canned for now)
+// item 0 per page is drawn at x=0
+// items afterwards are drawn with 
 // underscore as first character puts a line before it
-
+//                         "01234567890123456789"
 prog_char s000[] PROGMEM = "";
 prog_char s001[] PROGMEM = "   Scott Stuff";
 prog_char s002[] PROGMEM = "  ";
@@ -139,30 +161,72 @@ char slideidx[] = {
 };
 
 // this pulls content out of PROGMEM for general use
-char buffer[26];
 void loadString( int idx )
 {
   strcpy_P( buffer, (char*)pgm_read_word(&(string_list[idx])));
 }
 
+void dumpScreenSerial( char * one, char * zero )
+{
+  int w = TV.hres();
+  int h = TV.vres();
+  
+  Serial.print( w, DEC );
+  Serial.print( F(", ") );
+  Serial.println( h, DEC );
+  
+  // we'll do our own thing here instead of get_pixel to speed it up
+  for( int y=0 ; y<h ; y++ ) {
+    int offsy = y * w/8; // row offset into the buffer
+    
+    for( int x=0 ; x<w ; x=x+8 ) {
+      int offs = offsy + (x/8); // row + col offset into the buffer
+      int b = TV.screen[ offs ]; // get the byte there
+      for( int m=0x080 ; m ; m>>=1 ) // iterate over the bits
+      {
+        Serial.print( (b&m)==m? one : zero ); // and print out each
+      }
+      
+      /* the simpler, slower way
+      TV.get_pixel( x, y );
+      Serial.print( (b)?one:zero );
+      */
+    }
+    Serial.println();
+  }
+}
 
 void drawPage( int page )
 {
+  static int lastPage = -999;
+  
   // find page
   int x = 0;
   while( slideidx[x] != -1 && x != page ) x++;
 
+  if ( page != lastPage ) {
+    sprintf( buffer, "(%d)", page );
+    Serial.println();
+    Serial.println();
+    Serial.println( buffer );
+  }
+  
   // not found. print END.
   if( slideidx[x] == -1 ) {
     // center "END"
     loadString( 41 );
     TV.print_str( (TV.horz_res()/2)-(4*5) , (TV.vert_res() /2)-8, buffer );
-
+    if( page != lastPage ) {
+      Serial.println( buffer );
+    }
+        
     // version info at the bottom
     loadString( 42 );
     TV.print_str( 0 , TV.vert_res() - 18, buffer );
     loadString( 43 );
     TV.print_str( 0 , TV.vert_res() - 9, buffer );
+    
+    lastPage = page;
     return;
   }
   
@@ -176,6 +240,7 @@ void drawPage( int page )
   if( page == 0 ) {
     l = 5;
   }
+
   // prime with the first string
   loadString( strid );
   
@@ -193,10 +258,15 @@ void drawPage( int page )
       int ypos = (8*l) + 3;
       TV.draw_line(0, ypos, TV.horz_res()-1, ypos, 1);
       l++;
+      if( page != lastPage ) Serial.println( F("----------------------") );
     }
 
     // output our text
-    TV.print_str( 2 * 5, l * 8, &buffer[drawline] );
+    TV.print_str( (l==0)? 0 : (2 * 5), l * 8, &buffer[drawline] );
+    if( page != lastPage ) {
+      if( l>0 ) Serial.print( "  " );
+      Serial.println( &buffer[drawline] );
+    }
     l++; // next screen line
     
     strid++; // next display line
@@ -210,11 +280,55 @@ void drawPage( int page )
     sprintf( buffer, "%d", page );
     TV.print_str( 0, TV.vert_res()-8, buffer );
   }
+  
+  //if( lastPage != page )
+  //{
+  //  dumpScreenSerial("#"," ");
+  //}
+  
+  lastPage = page;
+}
+
+void handleSerial( void )
+{
+  if( Serial.available() )
+  {
+    switch( Serial.read() ) {
+      case( 'n' ): nextPage(); break;
+      case( 'p' ): previousPage(); break;
+      case( 'd' ): dumpScreenSerial( "#", " " ); break;
+      case( 'b' ):
+        Serial.println( F("P1") );
+        Serial.print( F("# Page ") );
+        Serial.print( page, DEC );
+        Serial.print( F("  "));
+        loadString( 42 );
+        Serial.print( buffer );
+        Serial.print( F("  "));
+        loadString( 43 );
+        Serial.println( buffer );
+        dumpScreenSerial( "1 ", "0 " );
+        break;
+        
+      case( 'h' ):
+      case( '?' ):
+        Serial.println( F( "n .. next" ));
+        Serial.println( F( "p .. previous" ));
+        Serial.println( F( "d .. dump" ));
+        Serial.println( F( "b .. PBM" ));
+        break;
+      default:
+        break;
+      }
+  }
 }
 
 void loop() {
   // check for advance/prevance button presses
   handleButtons();
+  
+  // check for serial input
+  handleSerial();
   
   // if either button is down, clear the screen with white.
   if ( a == 0 || b == 0 ) {
@@ -235,39 +349,3 @@ void loop() {
 
   drawPage( page );
 }
-
-#ifdef NEVER
-void loop2() {
-  TV.clear_screen();
-  x = 0;
-  y = 0;
-  for (char i = 32; i < 127; i++) {
-    TV.print_char(x * 6, y * 8, i);
-    x++;
-    if (x > TV.char_line()) {
-      y++;
-      x = 0;
-    }
-  }
-  TV.delay_frame(60);
-  TV.clear_screen();
-  TV.print_str(0, 0, "fill screen pixel");
-  TV.print_str(0, 8, "by pixel");
-  TV.delay_frame(60);
-  TV.clear_screen();
-  for (x = 0; x < TV.horz_res(); x++) {
-    for (y = 0; y < TV.vert_res(); y++) {
-      TV.set_pixel(x, y, 1);
-    }
-  }
-  TV.delay_frame(60);
-  TV.clear_screen();
-  TV.print_str(0, 0, "draw some lines");
-  TV.delay_frame(60);
-  for (y = 0; y < TV.vert_res(); y++) {
-    delay(10);
-    TV.draw_line(0, y, x - y, y, 2);
-  }
-  TV.delay_frame(60);
-}
-#endif
