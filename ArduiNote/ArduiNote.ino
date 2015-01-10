@@ -1,8 +1,13 @@
-/*  Arduinote / microNote / uNote
+/*  Arduinote
  *
  * 	2015-01-06 yorgle@gmail.com
  *
  *	a simple slideshow presenter using TVOut
+ *
+ *  This software is distributed under the MIT License
+ *
+ * 2015-01-09  1.2  Updated the demo presentation to be about ArduiNote
+ *                  Updated for Arduino 1.5.8
  *
  * 2015-01-09  1.1  Serial interface added with screendump and terminal display of text
  *
@@ -13,8 +18,8 @@
 #include <TVout.h>
 #include <avr/pgmspace.h>
 
-#define VERSA	" uNote v1.1 2015/1/9"
-#define VERSB	"  yorgle@gmail.com"
+#define VERSIONA " uNote v1.2 2015/1/9"
+#define VERSIONB "  yorgle@gmail.com"
 
 #define kPageDown	A0
 #define kPageUp		A1
@@ -27,7 +32,8 @@ char buffer[26];
 void setup()  {
   x = 0;
   y = 0;
-  TV.start_render(_NTSC);	//for devices with only 1k sram(m168) use TV.begin(_NTSC,128,56)
+  TV.start_render(_NTSC );
+  //TV.begin(_NTSC, 128,56 );	//for devices with only 1k sram(m168)
   TV.clear_screen();
 
   // buttons for forward/reverse
@@ -35,9 +41,9 @@ void setup()  {
   pinMode( kPageUp, INPUT );
   
   Serial.begin( 115200 );
-  loadString( 42 );
+  loadString( 1 );
   Serial.println( buffer );
-  loadString( 43 );
+  loadString( 2 );
   Serial.println( buffer );
 }
 
@@ -88,76 +94,77 @@ void handleButtons() {
 // items afterwards are drawn with 
 // underscore as first character puts a line before it
 //                         "01234567890123456789"
-prog_char s000[] PROGMEM = "";
-prog_char s001[] PROGMEM = "   Scott Stuff";
-prog_char s002[] PROGMEM = "  ";
-prog_char s003[] PROGMEM = "  Scott Lawrence";
-prog_char s004[] PROGMEM = "    2015-01-06";
+const char PROGMEM s000[] PROGMEM = "    ArduiNote";
+const char PROGMEM s001[] PROGMEM = "  ";
+const char PROGMEM s002[] PROGMEM = "  Scott Lawrence";
+const char PROGMEM s003[] PROGMEM = " yorgle@gmail.com";
+const char PROGMEM s004[] PROGMEM = "    2015-01-09";
 
-prog_char s100[] PROGMEM = "Sinclair ZX81";
-prog_char s101[] PROGMEM = "_- Video Out Mod";
-prog_char s102[] PROGMEM = "- Keyboard Repair";
-prog_char s103[] PROGMEM = "- Internal 16k RAM";
-prog_char s104[] PROGMEM = "_+ Lit Power Switch";
-prog_char s105[] PROGMEM = "+ Basic Video Out";
-prog_char s106[] PROGMEM = "+ USB for 5v Power";
-prog_char s107[] PROGMEM = "+ Board wedge";
+const char PROGMEM s200[] PROGMEM = "Overview";
+const char PROGMEM s201[] PROGMEM = "_* KeyNote from AVR";
+const char PROGMEM s202[] PROGMEM = "* Self Contained ";
+const char PROGMEM s203[] PROGMEM = "* Simple Circuit";
+const char PROGMEM s204[] PROGMEM = "* Just add power";
 
-prog_char s200[] PROGMEM = "Apple ][c";
-prog_char s201[] PROGMEM = "_- RAM chip swap";
-prog_char s202[] PROGMEM = "- RAM replace?";
+const char PROGMEM s300[] PROGMEM = "Hardware";
+const char PROGMEM s301[] PROGMEM = "_* Arduino (AT328+)";
+const char PROGMEM s302[] PROGMEM = "* Two buttons A0, A1";
+const char PROGMEM s303[] PROGMEM = "* LED for power";
+const char PROGMEM s304[] PROGMEM = "* Composite Plug";
+const char PROGMEM s305[] PROGMEM = "* 5 resistors";
 
-prog_char s300[] PROGMEM = "Doorduino 2000";
-prog_char s301[] PROGMEM = "_+ Basic design";
-prog_char s302[] PROGMEM = "+ Web UI";
-prog_char s303[] PROGMEM = "+ Kinda open door";
-prog_char s304[] PROGMEM = "_- Outside door";
-prog_char s305[] PROGMEM = "- Intercom lifter";
+const char PROGMEM s400[] PROGMEM = "Features";
+const char PROGMEM s401[] PROGMEM = "_* Simple use";
+const char PROGMEM s402[] PROGMEM = "* Simple hookup";
+const char PROGMEM s403[] PROGMEM = "* Serial interface";
+const char PROGMEM s404[] PROGMEM = "* Screendumps";
 
-prog_char s400[] PROGMEM = "TV Out";
-prog_char s401[] PROGMEM = "_+ Composite Cable";
-prog_char s402[] PROGMEM = "+ Learn TV Library";
-prog_char s403[] PROGMEM = "+ ArduiNote (11k)";
-prog_char s404[] PROGMEM = "_- Homebrew Computer";
+const char PROGMEM s500[] PROGMEM = "Limitations";
+const char PROGMEM s501[] PROGMEM = "_* Hardcoded text";
+const char PROGMEM s502[] PROGMEM = "* Program Memory";
+const char PROGMEM s503[] PROGMEM = "* Source Editing";
+const char PROGMEM s504[] PROGMEM = "* Cumbersome Editing";
 
-prog_char s900[] PROGMEM = "Into currently";
-prog_char s901[] PROGMEM = "_- Canto Ostinato";
-prog_char s902[] PROGMEM = "   Simeon ten Holt";
-prog_char s903[] PROGMEM = "- RLUG (Lego)";
-prog_char s904[] PROGMEM = "- Floorplan Rework";
-prog_char s905[] PROGMEM = "- Portable Computer";
+const char PROGMEM s600[] PROGMEM = "Next Version";
+const char PROGMEM s601[] PROGMEM = "_* SD for Slides";
+const char PROGMEM s602[] PROGMEM = "* SD for BMPs";
+const char PROGMEM s603[] PROGMEM = "* SD for Animations";
 
-prog_char uEnd[] PROGMEM = "End.";
-prog_char uVersA[] PROGMEM = VERSA;
-prog_char uVersB[] PROGMEM = VERSB;
+/* utility strings */
+const char PROGMEM uEndSlide[] PROGMEM = "";
+const char PROGMEM uEnd[] PROGMEM = "End.";
+const char PROGMEM uVersionA[] PROGMEM = VERSIONA;
+const char PROGMEM uVersionB[] PROGMEM = VERSIONB;
 
 // slide arrangement of strings
-PROGMEM const char * string_list[] =
+PROGMEM const char * const string_list[] =
 {
- /* 0: title slide  */
- s001, s002, s002, s003, s004, s000,
- /* 6: ZX */
- s100, s101, s102, s103, s104, s105, s106, s107, s000,
- /* 15: Apple IIc */
- s200, s201, s202, s000,
- /* 19: Doorduino */
- s300, s301, s302, s303, s304, s305, s000,
- /* 26: Arduinote */
- s400, s401, s402, s403, s404, s000, s000,
- /* 33: into */
- s900, s901, s902, s903, s904, s905, s000,
- /* end */
- s000,
+  /* 0: Utility */
+  uEnd, uVersionA, uVersionB, 
+  
+  /* Slides  */
+  /* 3 */
+  s000, s001, s002, s003, s004, uEndSlide,
+  /* 9 */
+  s200, s201, s202, s203, s204, uEndSlide,
+  /* 15 */
+  s300, s301, s302, s303, s304, s305, uEndSlide,
+  /* 22 */
+  s400, s401, s402, s403, s404, uEndSlide,
+  /* 28 */
+  s500, s501, s502, s503, s504, uEndSlide,
+  /* 34 */
+  s600, s601, s602, s603, uEndSlide,
 
- /* 39: utility strings */
- uEnd,
- uVersA,
- uVersB,
+  /* utility strings */
+  uEnd
 };
 
 // indexes for each slide - could make it more dynamic using a scanner
+// end with a -1
 char slideidx[] = {
-  0, 6, 15, 19, 26, 33, -1
+  3, 9, 15, 22, 28, 34, 
+  -1
 };
 
 // this pulls content out of PROGMEM for general use
@@ -214,16 +221,16 @@ void drawPage( int page )
   // not found. print END.
   if( slideidx[x] == -1 ) {
     // center "END"
-    loadString( 41 );
+    loadString( 0 );
     TV.print_str( (TV.horz_res()/2)-(4*5) , (TV.vert_res() /2)-8, buffer );
     if( page != lastPage ) {
       Serial.println( buffer );
     }
         
     // version info at the bottom
-    loadString( 42 );
+    loadString( 1 );
     TV.print_str( 0 , TV.vert_res() - 18, buffer );
-    loadString( 43 );
+    loadString( 2 );
     TV.print_str( 0 , TV.vert_res() - 9, buffer );
     
     lastPage = page;
@@ -281,11 +288,6 @@ void drawPage( int page )
     TV.print_str( 0, TV.vert_res()-8, buffer );
   }
   
-  //if( lastPage != page )
-  //{
-  //  dumpScreenSerial("#"," ");
-  //}
-  
   lastPage = page;
 }
 
@@ -302,10 +304,10 @@ void handleSerial( void )
         Serial.print( F("# Page ") );
         Serial.print( page, DEC );
         Serial.print( F("  "));
-        loadString( 42 );
+        loadString( 1 );
         Serial.print( buffer );
         Serial.print( F("  "));
-        loadString( 43 );
+        loadString( 2 );
         Serial.println( buffer );
         dumpScreenSerial( "1 ", "0 " );
         break;
