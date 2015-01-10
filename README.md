@@ -1,6 +1,9 @@
 # ArduiNote
 An ATMega 328 Arduino-based slide presentation tool (Arduino + Keynote)
 
+<img src="demo.jpg">
+*Debut of ArduiNote while presenting at Interlock*
+
 More info to come here in the future, but for now here are the basics:
 
 ##Software:
@@ -24,10 +27,15 @@ More info to come here in the future, but for now here are the basics:
 ##Notes:
  - The TVOut page indicates that it runs on pins 7 and 9.  This is incorrect. It works on pins 8 and 9.
  - Everything is hardcoded into the sketch for now
+ - If you want to change things, it's a bit cumbersome right now.
+  - Add entries to the string table
+  - Add items to the slide table
+  - Add appropriate indexes to the slide index table
  
 ---
 
 ##Future ideas:
+ - Script to convert plaintext slide content to the source code to "drop in"
  - Store slides on a SD card, eg:
   - SD/p/pres1/slide0.txt
   - SD/p/pres1/slide1.txt
